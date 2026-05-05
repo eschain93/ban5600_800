@@ -1,0 +1,669 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weekly Publishing Pace Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f6f8fb;
+            color: #1f2d3d;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .dashboard-container {
+            max-width: 1450px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 14px;
+            padding: 26px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        }
+
+        .dashboard-title {
+            text-align: center;
+            margin-bottom: 4px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #12355b;
+        }
+
+        .dashboard-subtitle {
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 15px;
+            color: #526d82;
+        }
+
+        .report-meta-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 22px;
+        }
+
+        .report-chip {
+            background-color: #eef4fb;
+            border: 1px solid #d9e7f5;
+            color: #12355b;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .filter-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: end;
+            background-color: #eef4fb;
+            border: 1px solid #d9e7f5;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .filter-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-block label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #12355b;
+        }
+
+        select, button {
+            min-width: 190px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            border: 1px solid #b8c7d9;
+            background-color: #ffffff;
+            color: #1f2d3d;
+            font-size: 14px;
+        }
+
+        button {
+            min-width: 120px;
+            cursor: pointer;
+            background-color: #12355b;
+            color: #ffffff;
+            border: none;
+            font-weight: 700;
+        }
+
+        .filter-status {
+            flex-basis: 100%;
+            font-size: 13px;
+            color: #526d82;
+            margin-top: 4px;
+        }
+
+        .executive-summary {
+            background-color: #f7fbff;
+            border: 1px solid #d9e7f5;
+            border-left: 5px solid #1f5f99;
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-bottom: 22px;
+        }
+
+        .executive-summary-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #12355b;
+            margin-bottom: 8px;
+        }
+
+        .executive-summary-text {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #334e68;
+        }
+
+        .scorecard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .scorecard {
+            border: 1px solid #d9e2ec;
+            border-radius: 12px;
+            padding: 18px 12px;
+            text-align: center;
+            background-color: #fbfdff;
+        }
+
+        .scorecard-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334e68;
+            margin-bottom: 10px;
+        }
+
+        .scorecard-value {
+            font-size: 38px;
+            font-weight: 800;
+            color: #1f5f99;
+        }
+
+        .scorecard-small {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1f5f99;
+            line-height: 1.25;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.35fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .chart-grid-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .chart-card {
+            border: 1px solid #d9e2ec;
+            border-radius: 12px;
+            padding: 12px;
+            background-color: #ffffff;
+            min-height: 390px;
+        }
+
+        .chart-card-wide {
+            min-height: 390px;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            padding: 12px;
+            border-radius: 10px;
+            background-color: #eef4fb;
+            color: #526d82;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1000px) {
+            .scorecard-grid,
+            .chart-grid,
+            .chart-grid-bottom {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-title">Weekly Publishing Pace Dashboard</div>
+        <div class="dashboard-subtitle">Month-to-Date Publishing Progress</div>
+
+        <div class="report-meta-row">
+            <div class="report-chip">Reporting Month: <span id="reportMonth"></span></div>
+            <div class="report-chip">Generated: <span id="reportGenerated"></span></div>
+        </div>
+
+        <div class="filter-panel">
+            <div class="filter-block">
+                <label for="brandFilter">Filter by Brand</label>
+                <select id="brandFilter"></select>
+            </div>
+
+            <div class="filter-block">
+                <label for="topicFilter">Filter by Topic Cluster</label>
+                <select id="topicFilter"></select>
+            </div>
+
+            <div class="filter-block">
+                <button onclick="clearFilters()">Clear Filters</button>
+            </div>
+
+            <div class="filter-status" id="filterStatus"></div>
+        </div>
+
+        <div class="executive-summary">
+            <div class="executive-summary-title">Executive Summary</div>
+            <div class="executive-summary-text" id="executiveSummary"></div>
+        </div>
+
+        <div class="scorecard-grid">
+            <div class="scorecard">
+                <div class="scorecard-title">Thomas Published MTD</div>
+                <div class="scorecard-value" id="thomasTotal">0</div>
+            </div>
+
+            <div class="scorecard">
+                <div class="scorecard-title">Xometry Published MTD</div>
+                <div class="scorecard-value" id="xometryTotal">0</div>
+            </div>
+
+            <div class="scorecard">
+                <div class="scorecard-title">Total Published MTD</div>
+                <div class="scorecard-value" id="totalPublished">0</div>
+            </div>
+
+            <div class="scorecard">
+                <div class="scorecard-title">Top Topic Cluster</div>
+                <div class="scorecard-small" id="topTopic">No Data</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <div id="thomasTopicChart"></div>
+            </div>
+
+            <div class="chart-card">
+                <div id="xometryTopicChart"></div>
+            </div>
+
+            <div class="chart-card chart-card-wide">
+                <div id="overallTopicChart"></div>
+            </div>
+        </div>
+
+        <div class="chart-grid-bottom">
+            <div class="chart-card">
+                <div id="weeklyPaceChart"></div>
+            </div>
+
+            <div class="chart-card">
+                <div id="brandShareChart"></div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            This interactive dashboard was generated with Python from Google Sheets source data. Use the filters above to explore the month-to-date publishing data by brand or topic cluster.
+        </div>
+    </div>
+
+    <script>
+        const records = [{"article_url": "https://www.thomasnet.com/articles/instruments-controls/electronic-switches/", "topic_cluster": "Instruments Controls", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/plant-facility-equipment/national-fire-protection-association-nfpa/", "topic_cluster": "Plant Facility Equipment", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/engineering-consulting/data-processing/", "topic_cluster": "Engineering Consulting", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/custom-manufacturing-fabricating/custom-crating/", "topic_cluster": "Custom Manufacturing Fabricating", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/electrical-power-generation/electrical-capacitance/", "topic_cluster": "Electrical Power Generation", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/electrical-power-generation/nanoelectronics/", "topic_cluster": "Electrical Power Generation", "publish_date": "2026-05-02", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/engineering-consulting/society-automotive-engineers-sae/", "topic_cluster": "Engineering Consulting", "publish_date": "2026-05-03", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/pumps-valves-accessories/compression-valve/", "topic_cluster": "Pumps Valves Accessories", "publish_date": "2026-05-04", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/pumps-valves-accessories/low-pressure-solenoid-valve/", "topic_cluster": "Pumps Valves Accessories", "publish_date": "2026-05-04", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/pumps-valves-accessories/pneumatic-valves/", "topic_cluster": "Pumps Valves Accessories", "publish_date": "2026-05-03", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/electrical-power-generation/inductor-types/", "topic_cluster": "Electrical Power Generation", "publish_date": "2026-05-05", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/electrical-power-generation/electrical-inductance/", "topic_cluster": "Electrical Power Generation", "publish_date": "2026-05-04", "brand": "Thomas", "full_sheet_name": "[Homework Version] Article Reviewer/Fact Checker Tracking Sheet (Thomas)", "tab_name": "Working List"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/valves-manufacturers-suppliers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/bolts-manufacturers-suppliers-companies/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/gasket-manufacturers-and-suppliers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/medical-equipment-manufacturers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-01", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/top-contract-manufacturing-companies-in-the-usa/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-02", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/material-handling-equipment-suppliers-manufacturers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-02", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/conveyor-manufacturers-and-suppliers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-02", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.thomasnet.com/articles/top-suppliers/industrial-robot-manufacturers-suppliers/", "topic_cluster": "Top Suppliers", "publish_date": "2026-05-03", "brand": "Thomas", "full_sheet_name": "[Homework Version] Industry Overview Pages - Thomas Strategy Plan", "tab_name": "Topics"}, {"article_url": "https://www.xometry.com/resources/injection-molding/gas-assist-injection-molding/", "topic_cluster": "Injection Molding", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/materials/high-impact-polystyrene-hips/", "topic_cluster": "Materials", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/drilling-machines/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/parts-of-a-cnc-machine/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/cnc-vs-manual-machining/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/types-of-holes-in-engineering/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/cnc-programming/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/types-of-cnc-machines/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/what-is-cnc-machining/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/what-is-cnc-plasma-cutting/", "topic_cluster": "Machining", "publish_date": "2026-05-01", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/materials/polyethylene/", "topic_cluster": "Materials", "publish_date": "2026-05-02", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/what-is-grinding-machine/", "topic_cluster": "Machining", "publish_date": "2026-05-02", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/swiss-machining/", "topic_cluster": "Machining", "publish_date": "2026-05-02", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/machining/electrical-discharge-machining/", "topic_cluster": "Machining", "publish_date": "2026-05-02", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}, {"article_url": "https://www.xometry.com/resources/materials/carbon-steel/", "topic_cluster": "Materials", "publish_date": "2026-05-05", "brand": "Xometry", "full_sheet_name": "[Homework Version] Xometry SEO Article Tracking Sheet", "tab_name": "Current Koray Content Workstream"}];
+        const executiveSummary = "In May 2026, the publishing pace reached a total of 35 articles in the first week, reflecting a strong start to the month. Thomas contributed 20 articles, while Xometry added 15, indicating balanced brand participation. Content focused predominantly on the Machining topic cluster, which accounted for nearly one-third of the published articles. Other topic areas showed moderate activity, supporting a diverse content strategy.";
+        const reportMonthLabel = "May 2026";
+        const reportGeneratedLabel = "May 05, 2026";
+
+        const bluePalette = [
+            "#0b2545",
+            "#133b5c",
+            "#1f5f99",
+            "#2f80c1",
+            "#4b9cd3",
+            "#74b3ce",
+            "#9ccce3",
+            "#c6ddeb",
+            "#dbeafe",
+            "#edf6fb"
+        ];
+
+        const config = {
+            responsive: true,
+            displaylogo: false
+        };
+
+        function uniqueValues(data, key) {
+            return [...new Set(data.map(row => row[key]).filter(value => value && value !== "Unknown"))].sort();
+        }
+
+        function populateFilters() {
+            const brandFilter = document.getElementById("brandFilter");
+            const topicFilter = document.getElementById("topicFilter");
+
+            const brands = uniqueValues(records, "brand");
+            const topics = uniqueValues(records, "topic_cluster");
+
+            brandFilter.innerHTML = "<option value='All'>All Brands</option>";
+            topicFilter.innerHTML = "<option value='All'>All Topic Clusters</option>";
+
+            brands.forEach(brand => {
+                brandFilter.innerHTML += `<option value="${brand}">${brand}</option>`;
+            });
+
+            topics.forEach(topic => {
+                topicFilter.innerHTML += `<option value="${topic}">${topic}</option>`;
+            });
+
+            brandFilter.addEventListener("change", updateDashboard);
+            topicFilter.addEventListener("change", updateDashboard);
+        }
+
+        function clearFilters() {
+            document.getElementById("brandFilter").value = "All";
+            document.getElementById("topicFilter").value = "All";
+            updateDashboard();
+        }
+
+        function getFilteredRecords() {
+            const selectedBrand = document.getElementById("brandFilter").value;
+            const selectedTopic = document.getElementById("topicFilter").value;
+
+            return records.filter(row => {
+                const brandMatch = selectedBrand === "All" || row.brand === selectedBrand;
+                const topicMatch = selectedTopic === "All" || row.topic_cluster === selectedTopic;
+                return brandMatch && topicMatch;
+            });
+        }
+
+        function groupCount(data, key) {
+            const counts = {};
+
+            data.forEach(row => {
+                const value = row[key] || "Unknown";
+                counts[value] = (counts[value] || 0) + 1;
+            });
+
+            return Object.entries(counts)
+                .map(([label, count]) => ({ label, count }))
+                .sort((a, b) => b.count - a.count);
+        }
+
+        function getWeekLabel(dateString) {
+            const date = new Date(dateString + "T00:00:00");
+            const weekNumber = Math.floor((date.getDate() - 1) / 7) + 1;
+            return "Week " + weekNumber;
+        }
+
+        function updateScorecards(filteredRecords) {
+            const thomasTotal = filteredRecords.filter(row => row.brand === "Thomas").length;
+            const xometryTotal = filteredRecords.filter(row => row.brand === "Xometry").length;
+            const totalPublished = filteredRecords.length;
+
+            const topicCounts = groupCount(filteredRecords, "topic_cluster");
+            const topTopic = topicCounts.length > 0 ? topicCounts[0].label : "No Data";
+
+            document.getElementById("thomasTotal").textContent = thomasTotal;
+            document.getElementById("xometryTotal").textContent = xometryTotal;
+            document.getElementById("totalPublished").textContent = totalPublished;
+            document.getElementById("topTopic").textContent = topTopic;
+        }
+
+        function updateFilterStatus(filteredRecords) {
+            const selectedBrand = document.getElementById("brandFilter").value;
+            const selectedTopic = document.getElementById("topicFilter").value;
+
+            document.getElementById("filterStatus").textContent =
+                `Active filters: Brand = ${selectedBrand}; Topic Cluster = ${selectedTopic}. Displaying ${filteredRecords.length} published article records for ${reportMonthLabel}.`;
+        }
+
+        function drawDonutChart(containerId, data, title) {
+            const grouped = groupCount(data, "topic_cluster");
+
+            if (grouped.length === 0) {
+                Plotly.newPlot(
+                    containerId,
+                    [],
+                    {
+                        title: { text: title, font: { size: 17, color: "#12355b" } },
+                        annotations: [
+                            {
+                                text: "No data for selected filters",
+                                x: 0.5,
+                                y: 0.5,
+                                showarrow: false,
+                                font: { size: 14, color: "#526d82" }
+                            }
+                        ],
+                        paper_bgcolor: "#ffffff",
+                        plot_bgcolor: "#ffffff",
+                        margin: { l: 20, r: 20, t: 55, b: 20 }
+                    },
+                    config
+                );
+                return;
+            }
+
+            Plotly.newPlot(
+                containerId,
+                [
+                    {
+                        type: "pie",
+                        labels: grouped.map(row => row.label),
+                        values: grouped.map(row => row.count),
+                        hole: 0.42,
+                        marker: { colors: bluePalette },
+                        textinfo: "percent",
+                        textposition: "inside",
+                        hovertemplate: "<b>%{label}</b><br>Articles: %{value}<br>Share: %{percent}<extra></extra>",
+                        sort: false
+                    }
+                ],
+                {
+                    title: { text: title, font: { size: 17, color: "#12355b" } },
+                    showlegend: true,
+                    legend: {
+                        orientation: "h",
+                        y: -0.18,
+                        x: 0.5,
+                        xanchor: "center",
+                        font: { size: 10, color: "#334e68" }
+                    },
+                    paper_bgcolor: "#ffffff",
+                    plot_bgcolor: "#ffffff",
+                    margin: { l: 15, r: 15, t: 55, b: 85 }
+                },
+                config
+            );
+        }
+
+        function drawHorizontalBarChart(containerId, data, title) {
+            const grouped = groupCount(data, "topic_cluster")
+                .sort((a, b) => a.count - b.count);
+
+            if (grouped.length === 0) {
+                Plotly.newPlot(
+                    containerId,
+                    [],
+                    {
+                        title: { text: title, font: { size: 17, color: "#12355b" } },
+                        annotations: [
+                            {
+                                text: "No data for selected filters",
+                                x: 0.5,
+                                y: 0.5,
+                                showarrow: false,
+                                font: { size: 14, color: "#526d82" }
+                            }
+                        ],
+                        paper_bgcolor: "#ffffff",
+                        plot_bgcolor: "#ffffff",
+                        margin: { l: 20, r: 20, t: 55, b: 20 }
+                    },
+                    config
+                );
+                return;
+            }
+
+            Plotly.newPlot(
+                containerId,
+                [
+                    {
+                        type: "bar",
+                        x: grouped.map(row => row.count),
+                        y: grouped.map(row => row.label),
+                        orientation: "h",
+                        marker: { color: "#2f80c1" },
+                        hovertemplate: "<b>%{y}</b><br>Articles: %{x}<extra></extra>"
+                    }
+                ],
+                {
+                    title: { text: title, font: { size: 17, color: "#12355b" } },
+                    xaxis: {
+                        title: "Published Articles",
+                        gridcolor: "#d9e7f5",
+                        zeroline: false
+                    },
+                    yaxis: {
+                        automargin: true,
+                        tickfont: { size: 11 }
+                    },
+                    paper_bgcolor: "#ffffff",
+                    plot_bgcolor: "#f7fbff",
+                    margin: { l: 150, r: 20, t: 55, b: 45 }
+                },
+                config
+            );
+        }
+
+        function drawWeeklyPaceChart(containerId, data) {
+            const weekCounts = {};
+
+            data.forEach(row => {
+                const week = getWeekLabel(row.publish_date);
+                weekCounts[week] = (weekCounts[week] || 0) + 1;
+            });
+
+            const grouped = Object.entries(weekCounts)
+                .map(([label, count]) => ({ label, count }))
+                .sort((a, b) => Number(a.label.replace("Week ", "")) - Number(b.label.replace("Week ", "")));
+
+            if (grouped.length === 0) {
+                Plotly.newPlot(
+                    containerId,
+                    [],
+                    {
+                        title: { text: "Weekly Publishing Pace", font: { size: 17, color: "#12355b" } },
+                        annotations: [
+                            {
+                                text: "No data for selected filters",
+                                x: 0.5,
+                                y: 0.5,
+                                showarrow: false,
+                                font: { size: 14, color: "#526d82" }
+                            }
+                        ],
+                        paper_bgcolor: "#ffffff",
+                        plot_bgcolor: "#ffffff",
+                        margin: { l: 20, r: 20, t: 55, b: 20 }
+                    },
+                    config
+                );
+                return;
+            }
+
+            Plotly.newPlot(
+                containerId,
+                [
+                    {
+                        type: "bar",
+                        x: grouped.map(row => row.label),
+                        y: grouped.map(row => row.count),
+                        marker: { color: "#1f5f99" },
+                        hovertemplate: "<b>%{x}</b><br>Articles: %{y}<extra></extra>"
+                    }
+                ],
+                {
+                    title: { text: "Weekly Publishing Pace", font: { size: 17, color: "#12355b" } },
+                    xaxis: {
+                        title: "Publish Week"
+                    },
+                    yaxis: {
+                        title: "Published Articles",
+                        gridcolor: "#d9e7f5",
+                        rangemode: "tozero"
+                    },
+                    paper_bgcolor: "#ffffff",
+                    plot_bgcolor: "#f7fbff",
+                    margin: { l: 60, r: 20, t: 55, b: 55 }
+                },
+                config
+            );
+        }
+
+        function drawBrandShareChart(containerId, data) {
+            const grouped = groupCount(data, "brand");
+
+            if (grouped.length === 0) {
+                Plotly.newPlot(
+                    containerId,
+                    [],
+                    {
+                        title: { text: "Share of Published Articles by Brand", font: { size: 17, color: "#12355b" } },
+                        annotations: [
+                            {
+                                text: "No data for selected filters",
+                                x: 0.5,
+                                y: 0.5,
+                                showarrow: false,
+                                font: { size: 14, color: "#526d82" }
+                            }
+                        ],
+                        paper_bgcolor: "#ffffff",
+                        plot_bgcolor: "#ffffff",
+                        margin: { l: 20, r: 20, t: 55, b: 20 }
+                    },
+                    config
+                );
+                return;
+            }
+
+            Plotly.newPlot(
+                containerId,
+                [
+                    {
+                        type: "pie",
+                        labels: grouped.map(row => row.label),
+                        values: grouped.map(row => row.count),
+                        hole: 0.55,
+                        marker: { colors: ["#1f5f99", "#74b3ce", "#c6ddeb"] },
+                        textinfo: "label+percent",
+                        textposition: "inside",
+                        hovertemplate: "<b>%{label}</b><br>Articles: %{value}<br>Share: %{percent}<extra></extra>"
+                    }
+                ],
+                {
+                    title: { text: "Share of Published Articles by Brand", font: { size: 17, color: "#12355b" } },
+                    showlegend: false,
+                    paper_bgcolor: "#ffffff",
+                    plot_bgcolor: "#ffffff",
+                    margin: { l: 20, r: 20, t: 55, b: 20 }
+                },
+                config
+            );
+        }
+
+        function updateDashboard() {
+            const filteredRecords = getFilteredRecords();
+
+            updateScorecards(filteredRecords);
+            updateFilterStatus(filteredRecords);
+
+            const thomasRecords = filteredRecords.filter(row => row.brand === "Thomas");
+            const xometryRecords = filteredRecords.filter(row => row.brand === "Xometry");
+
+            drawDonutChart("thomasTopicChart", thomasRecords, "Thomas Topic Cluster Breakdown");
+            drawDonutChart("xometryTopicChart", xometryRecords, "Xometry Topic Cluster Breakdown");
+            drawHorizontalBarChart("overallTopicChart", filteredRecords, "Published Articles by Topic Cluster");
+            drawWeeklyPaceChart("weeklyPaceChart", filteredRecords);
+            drawBrandShareChart("brandShareChart", filteredRecords);
+        }
+
+        document.getElementById("executiveSummary").textContent = executiveSummary;
+        document.getElementById("reportMonth").textContent = reportMonthLabel;
+        document.getElementById("reportGenerated").textContent = reportGeneratedLabel;
+
+        populateFilters();
+        updateDashboard();
+    </script>
+</body>
+</html>
